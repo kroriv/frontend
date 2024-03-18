@@ -2,7 +2,7 @@ import type { LoaderFunctionArgs, MetaFunction , ActionFunctionArgs } from "@rem
 import { json, redirect, useLoaderData, useActionData, Link, Form } from "@remix-run/react";
 import shopname from "~/schemas/shopname";
 import { AnimatePresence } from "framer-motion";
-import guard from "~/services/guard.user.server";
+import authenticate from "~/services/authenticate.user.server";
 import { getSession, commitSession } from "~/services/session.server";
 import { Inquiry as InquiryFormData } from "~/types/Inquiry";
 import { Wrap as UserFormWrap, Step1 as InquiryFormStep1, Step2 as InquiryFormStep2  } from "~/components/Inquiry/InquiryForm";
@@ -39,7 +39,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   console.log("session=", session);
   
   // 認証処理から認証署名を取得
-  const signature = await guard({ request: request, context: context });
+  const signature = await authenticate({ session: session });
 
   // 認証署名がない場合はエラー
   if (!signature) {
@@ -52,7 +52,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   // URLパラメータからstepを取得
   const step = new URL(request.url).searchParams.get("step") || 1;
   // セッションから魚種を取得
-  const kind = session.get("home-report-kind");
+  const kind = session.get("home-fishkind");
   console.log("step=", step);
   console.log("kind=", kind);
 
@@ -104,7 +104,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const session = await getSession(request.headers.get("Cookie"));
 
   // 認証処理から認証署名を取得
-  const signature = await guard({ request: request, context: context });
+  const signature = await authenticate({ session: session });
 
   // リクエストからフォームデータ取得
   const formData = await request.formData();
@@ -129,7 +129,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
     InquiryData.rejistname = String(formData.get("inquiry[rejistname]"));
     InquiryData.postcode = String(formData.get("inquiry[postcode]"));
     InquiryData.address = String(formData.get("inquiry[address]"));
-    InquiryData.kind = String(formData.get("inquiry[kind]"));
+    InquiryData.kind = String(session.get("home-fishkind"));
     InquiryData.detail = String(formData.get("inquiry[detail]"));
 
     session.set("inquiry-form-data", JSON.stringify(InquiryData));
@@ -151,7 +151,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
     PostFormData.append("inquiry[rejistname]", String(InquiryData.rejistname));
     PostFormData.append("inquiry[postcode]", String(InquiryData.postcode));
     PostFormData.append("inquiry[address]", String(InquiryData.address));
-    PostFormData.append("inquiry[kind]", String(session.get("home-report-kind")));
+    PostFormData.append("inquiry[kind]", String(InquiryData.kind));
     PostFormData.append("inquiry[detail]", String(InquiryData.detail));
 
     // バリデーション
@@ -186,6 +186,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
     InquiryData.postcode = "";
     InquiryData.address = "";
     InquiryData.detail = "";
+    InquiryData.kind = "";
     session.set("inquiry-form-data", JSON.stringify(InquiryData));
   }
 

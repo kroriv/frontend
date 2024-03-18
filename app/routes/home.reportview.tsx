@@ -38,12 +38,8 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
   // セッション取得
   const session = await getSession(request.headers.get("Cookie"));
-
+  // 認証署名取得
   const signature = session.get("signin-auth-user-signature");
-  
-  // 認証処理から認証署名を取得
-  const { user, likes, comments } = await guard({ request: request, context: context });
-  
   // 認証署名がない場合はエラー
   if (!signature) {
     throw new Response(null, {
@@ -51,14 +47,14 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       statusText: "署名の検証に失敗しました。",
     });
   }
+  
+  // 認証処理から認証署名を取得
+  const { user, likes, comments } = await guard({ request: request, context: context });
 
   // URLパラメータから記事種別と記事IDを取得
-  const kindtmp = new URL(request.url).searchParams.get("kind");
-  const kind = kindtmp ? kindtmp: 2;
   const id = new URL(request.url).searchParams.get("id");
   const ref = new URL(request.url).searchParams.get("ref");
 
-  console.log("kind=", kind);
   console.log("id=", id);
   console.log("ref=", ref);
 
@@ -71,11 +67,15 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     // FormData作成
     const formData = new FormData();
     formData.append("user[signature]", String(signature));
-    formData.append("report[kind]", String(kind));
-    formData.append("report[id]", String(id));
+
+    if (id === null){
+      formData.append("report[id]", String(session.get("home-report-id")));  
+    }
+    else{
+      formData.append("report[id]", String(id));
+    }
 
     console.log("formData.singnature=", formData.get("user[signature]"));
-    console.log("formData.report[kind]=", formData.get("report[kind]"));
     console.log("formData.report[id]=", formData.get("report[id]"));
 
     //該当記事の詳細API呼び出し
@@ -94,13 +94,25 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       });
     }
     
+    //セッションに魚種を保存
+    session.set("home-fishkind", jsonData.report.fishkind);
+
+    //ほしいね済みか判定
+    const likeary: string[] = session.get("home-user-like");
+    const likeflg: boolean = likeary && likeary.indexOf(jsonData.report.id) >= 0 ? true:false;
+
+    //一度でもコメントした記事か判定
+    const commentary: string[] = session.get("home-user-comment");
+    const commentflg: boolean = commentary && commentary.indexOf(jsonData.report.id) >= 0 ? true:false;
+
     return json(
       {
         ref: ref,
-        kind: String(kind),
         report: jsonData.report,
         comments: jsonData.comment,
         likenum: jsonData.likenum,
+        likeflg: likeflg,
+        commentflg: commentflg,
         uploads_url: context.env.UPLOADS_URL,
       },
       {
@@ -115,10 +127,11 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
     return json({
       ref: ref,
-      kind: String(kind),
       report: null,
       comments: null,
       likenum: 0,
+      likeflg: false,
+      commentflg: false,
       uploads_url: context.env.UPLOADS_URL,
     },
     {
@@ -196,6 +209,9 @@ export async function action({ request, context }: ActionFunctionArgs) {
       const tmp :String[] = [String(likeid)];
       session.set("home-user-like", tmp);  
     }
+
+    //セッションに記事IDを保存
+    session.set("home-report-id", likeid);
     
     /** ページ遷移不要 */
     /*

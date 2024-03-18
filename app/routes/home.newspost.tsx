@@ -29,11 +29,8 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
   // セッション取得
   const session = await getSession(request.headers.get("Cookie"));
-
-  // 認証処理から認証署名を取得
-  const signature = await guard({ request: request, context: context });
-  console.log("signature=", signature);
-  
+  // 認証署名取得
+  const signature = session.get("signin-auth-user-signature");
   // 認証署名がない場合はエラー
   if (!signature) {
     throw new Response(null, {
@@ -42,6 +39,9 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     });
   }
 
+  // 認証情報取得
+  const { user, likes, comments } = await guard({ request: request, context: context });  
+  
   // URLパラメータからstepを取得
   const step = new URL(request.url).searchParams.get("step") || 1;
   // セッションから魚種を取得

@@ -6,6 +6,7 @@ import { reportcostom as ReportCostom } from "~/types/Report";
 import { topic as topic } from "~/types/topic";
 import Logo from "~/components/shared/Logo"; 
 import ThumbPost from "~/components/shared/ThumbPost";
+import PostCursor from "~/components/shared/PostCursor";
 
 export const meta: MetaFunction = () => {
   return [
@@ -22,7 +23,19 @@ type LoaderApiResponse = {
     topics: topic[];
 }
 
-  
+type LoaderMarketApiResponse = {
+  status: number;
+  messages: { message: string };
+  MarketReports: ReportCostom[];
+}
+
+type LoaderFishmanApiResponse = {
+  status: number;
+  messages: { message: string };
+  FishmanReports: ReportCostom[];
+}
+
+
 /**
  * Loader
  */
@@ -32,14 +45,14 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   // セッション取得
   const session = await getSession(request.headers.get("Cookie"));
 
-  // 認証処理から認証署名を取得
-  const user = await guard({ request: request, context: context });
+  // 認証処理から利用者情報を取得
+  const { user, likes, comments } = await guard({ request: request, context: context });
   
-  // 認証署名がない場合はエラー
+  // 利用者情報がない場合はエラー
   if (!user) {
     throw new Response(null, {
       status: 401,
-      statusText: "署名の検証に失敗しました。",
+      statusText: "認証に失敗しました。",
     });
   }
   
@@ -60,39 +73,56 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   console.log("user[signature]=", formData.get("user[signature]"));
   console.log("user[kind]=", formData.get("user[kind]"));
 
-  //魚種にあったトピックスと記事一覧API呼び出し
-  const apiResponse = await fetch(`${ context.env.API_URL }/report/view`, { method: "POST", body: formData });
+  //魚種にあった記事一覧API呼び出し（生産者）
+  const apiResponseFishman = await fetch(`${ context.env.API_URL }/report/fishman.viewlist`, { method: "POST", body: formData });
   // JSONデータを取得
-  const jsonData = await apiResponse.json<LoaderApiResponse>();
-  console.log("jsonData=", jsonData);
-  //console.log("jsonData.MarketReports=", jsonData.MarketReports);
-  //console.log("jsonData.MarketReports[0]=", jsonData.MarketReports[0]);
-  //console.log("jsonData.FishmanReports=", jsonData.FishmanReports);
-  //console.log("jsonData.topics=", jsonData.topics);
+  const jsonDataFishman = await apiResponseFishman.json<LoaderFishmanApiResponse>();
+  console.log("jsonData=", jsonDataFishman);
+  console.log("jsonData.FishmanReports=", jsonDataFishman.FishmanReports);
+  console.log("jsonData.FishmanReports[0]=", jsonDataFishman.FishmanReports[0]);
+
   // ステータス200以外の場合はエラー
-  if (jsonData.status !== 200) {
+  if (jsonDataFishman.status !== 200) {
     throw new Response(null, {
-      status: jsonData.status,
-      statusText: jsonData.messages.message,
+      status: jsonDataFishman.status,
+      statusText: jsonDataFishman.messages.message,
     });
   }
 
-  //セッションに魚種を保存
-  session.set("home-report-kind", ref);
+  //魚種にあった記事一覧API呼び出し（市場関係者）
+  const apiResponseMarket = await fetch(`${ context.env.API_URL }/report/market.viewlist`, { method: "POST", body: formData });
+  // JSONデータを取得
+  const jsonDataMarket = await apiResponseMarket.json<LoaderMarketApiResponse>();
+  console.log("jsonData=", jsonDataMarket);
+  console.log("jsonData.MarketReports=", jsonDataMarket.MarketReports);
+  console.log("jsonData.MarketReports[0]=", jsonDataMarket.MarketReports[0]);
 
+  // ステータス200以外の場合はエラー
+  if (jsonDataMarket.status !== 200) {
+    throw new Response(null, {
+      status: jsonDataMarket.status,
+      statusText: jsonDataMarket.messages.message,
+    });
+  }
+  
+  // home-report-kind
+  //セッションに魚種を保存
+  //session.set("home-fishkind", ref);
+  session.set("home-report-kind", ref);
+  
   //自分がほしいねした記事にフラグを立てる
   if (likeAry != null){
     likeAry.forEach(tmpid => {
       let lIndex : number;
   
-      lIndex = jsonData.MarketReports.findIndex(l => l.id == tmpid);
+      lIndex = jsonDataMarket.MarketReports.findIndex(l => l.id == tmpid);
       if (lIndex >= 0){
-        jsonData.MarketReports[lIndex].like_flg = true;
+        jsonDataMarket.MarketReports[lIndex].like_flg = true;
       }
   
-      lIndex = jsonData.FishmanReports.findIndex(l => l.id == tmpid);
+      lIndex = jsonDataFishman.FishmanReports.findIndex(l => l.id == tmpid);
       if (lIndex >= 0){
-        jsonData.FishmanReports[lIndex].like_flg = true;
+        jsonDataFishman.FishmanReports[lIndex].like_flg = true;
       }
     });      
   }
@@ -103,46 +133,46 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       let lIndex : number;
       
       console.log("comment.id=", tmpid);
-      lIndex = jsonData.MarketReports.findIndex(l => l.id == tmpid);
+      lIndex = jsonDataMarket.MarketReports.findIndex(l => l.id == tmpid);
       if (lIndex >= 0){
         console.log("market comment on");
-        jsonData.MarketReports[lIndex].comment_flg = true;
+        jsonDataMarket.MarketReports[lIndex].comment_flg = true;
       }
   
-      lIndex = jsonData.FishmanReports.findIndex(l => l.id == tmpid);
+      lIndex = jsonDataFishman.FishmanReports.findIndex(l => l.id == tmpid);
       if (lIndex >= 0){
         console.log("fishman comment on");
-        jsonData.FishmanReports[lIndex].comment_flg = true;
+        jsonDataFishman.FishmanReports[lIndex].comment_flg = true;
       }
     });  
   }
 
   console.log("market");
-  jsonData.MarketReports.forEach(tmp => {
+  jsonDataMarket.MarketReports.forEach(tmp => {
     console.log("id=", tmp.id);
     console.log("comment_flg=", tmp.comment_flg);
   });
-  console.log("jsonData.MarketReports[0]=", jsonData.MarketReports[0]);
 
-  return json({
-    market:  jsonData.MarketReports,
-    fishman: jsonData.FishmanReports,
-    topics:  jsonData.topics,
-    ref: ref,
-    uploads_url: context.env.UPLOADS_URL
-  },
-  {
-    headers: {
-      "Set-Cookie": await commitSession(session),
-    }
-  });  
+  return json(
+    {
+      user,
+      market:  jsonDataMarket.MarketReports,
+      fishman: jsonDataFishman.FishmanReports,
+      ref: ref,
+      uploads_url: context.env.UPLOADS_URL
+    },
+    {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      }
+    });  
 }
 
 export default function Page() {
   // LOADER
   const loaderData = useLoaderData<typeof loader>();
   // Payloads
-  const { market, fishman, ref, uploads_url } = loaderData;
+  const { user, market, fishman, ref, uploads_url } = loaderData;
   
   if (ref) {
     return (
@@ -183,10 +213,10 @@ export default function Page() {
             <h2 className={ "text-28ptr font-semibold whitespace-nowrap" }>生産者の声</h2>
           </div>
           <div className={ "wrap grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-8" }>
-            { fishman.map((repo) => (
+            { fishman && fishman.map((repo) => (
             <ThumbPost 
               key={ repo.id }
-              to={ `/home/reportview/?ref=view&kind=2&id=${ repo.id }` }
+              to={ `/home/reportview/?ref=view&id=${ repo.id }` }
               nickname={ repo.nickname }
               isLiked={ repo.like_flg }
               likeCount={ repo.like_cnt }
@@ -194,9 +224,10 @@ export default function Page() {
               commentCount={ repo.comment_cnt }
               title={ repo.title }
               uploadsUrl={ uploads_url }
+              imgPath={ repo.imgPath }
             />
             )) }
-            { fishman.length === 0 &&
+            { !fishman || fishman.length === 0 &&
             <p>記事はありません</p>
             }
           </div>
@@ -207,10 +238,10 @@ export default function Page() {
             <h2 className={ "text-28ptr font-semibold whitespace-nowrap" }>福井中央卸売市場からのお知らせ</h2>
           </div>
           <div className={ "wrap grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-8" }>
-            { market.map((repo) => (
+            { market && market.map((repo) => (
             <ThumbPost 
               key={ repo.id }
-              to={ `/home/reportview/?ref=view&kind=2&id=${ repo.id }` }
+              to={ `/home/reportview/?ref=view&id=${ repo.id }` }
               nickname={ repo.nickname }
               isLiked={ repo.like_flg }
               likeCount={ repo.like_cnt }
@@ -218,13 +249,19 @@ export default function Page() {
               commentCount={ repo.comment_cnt }
               title={ repo.title }
               uploadsUrl={ uploads_url }
+              imgPath={ repo.imgPath }
             />
             ))}
-            { market.length === 0 &&
+            { !market || market.length === 0 &&
             <p>記事はありません</p>
             }
           </div>
         </section>
+        
+        { /** 生産者の場合のみ投稿ボタン表示 */}
+        { Number(user.section) === 3 &&
+        <PostCursor/>
+        }
       </>
     );
   }
@@ -264,4 +301,5 @@ export default function Page() {
       </section>
     </>
   );
+
 }

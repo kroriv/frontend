@@ -59,10 +59,15 @@ export async function action({ request, context }: ActionFunctionArgs) {
   
   // メールアドレス認証フォーム
   if (formData.get("form") === "preflight") {
+    console.log("formData.email=", formData.get("preflight[email]"));
+
     // APIへデータを送信(php spark serve --host 0.0.0.0)
 	  const apiResponse = await fetch(`${ context.env.API_URL }/signup/create.preflight`, { method: "POST", body: formData });
+
     // JSONデータに変換
     const jsonData = await apiResponse.json<ActionApiResponse>();
+    console.log("jsonData=", jsonData);
+
     // ステータスが200以外の場合はエラー
     if (jsonData.status !== 200) {
       return json({
@@ -81,8 +86,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
   if (formData.get("form") === "signin") {
     // APIへデータを送信(php spark serve --host 0.0.0.0)
 	  const apiResponse = await fetch(`${ context.env.API_URL }/signin/auth.user`, { method: "POST", body: formData });
+
     // JSONデータを受信
 	  const jsonData = await apiResponse.json<ActionApiResponse>();
+    console.log("jsonData=", jsonData);
     // ステータスが200以外の場合はエラー
     if (jsonData.status !== 200) {
       return json({
@@ -91,8 +98,6 @@ export async function action({ request, context }: ActionFunctionArgs) {
     }
     // 認証署名をセッションに保存
     session.set("signin-auth-user-signature", jsonData.signature);
-    
-    console.log(1111111111111111111111111111111111111111111);
     
     // 認証後ホーム画面へリダイレクト
     return redirect("/home", {
