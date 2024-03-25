@@ -44,6 +44,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
   // セッション取得
   const session = await getSession(request.headers.get("Cookie"));
+  console.log("session=", session);
 
   // 認証処理から利用者情報を取得
   const { user, likes, comments } = await guard({ request: request, context: context });
@@ -55,7 +56,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       statusText: "認証に失敗しました。",
     });
   }
-  
+
   // URLパラメータからrefを取得
   const ref = new URL(request.url).searchParams.get("ref");
   console.log("ref=", ref);
@@ -78,8 +79,6 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   // JSONデータを取得
   const jsonDataFishman = await apiResponseFishman.json<LoaderFishmanApiResponse>();
   console.log("jsonData=", jsonDataFishman);
-  console.log("jsonData.FishmanReports=", jsonDataFishman.FishmanReports);
-  console.log("jsonData.FishmanReports[0]=", jsonDataFishman.FishmanReports[0]);
 
   // ステータス200以外の場合はエラー
   if (jsonDataFishman.status !== 200) {
@@ -94,8 +93,6 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   // JSONデータを取得
   const jsonDataMarket = await apiResponseMarket.json<LoaderMarketApiResponse>();
   console.log("jsonData=", jsonDataMarket);
-  console.log("jsonData.MarketReports=", jsonDataMarket.MarketReports);
-  console.log("jsonData.MarketReports[0]=", jsonDataMarket.MarketReports[0]);
 
   // ステータス200以外の場合はエラー
   if (jsonDataMarket.status !== 200) {
@@ -104,12 +101,11 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       statusText: jsonDataMarket.messages.message,
     });
   }
-  
-  // home-report-kind
+
   //セッションに魚種を保存
   //session.set("home-fishkind", ref);
   session.set("home-report-kind", ref);
-  
+
   //自分がほしいねした記事にフラグを立てる
   if (likeAry != null){
     likeAry.forEach(tmpid => {
@@ -179,7 +175,10 @@ export default function Page() {
       <>
         <section className={ "container" }>
           <div className={ "wrap" }>
-            <Logo/>
+            <h1 className={ "flex flex-col justify-center items-center py-8 gap-2 md:gap-4" }>
+              <Logo className={ "w-[120px] md:w-[240px] h-auto" }/>
+              <p className={ "text-black/80 text-12ptr md:text-12ptr lg:text-16ptr xl:text-20ptr font-notoserifjp font-medium" }>ふくいの魚つながるアプリ</p>
+            </h1>
           </div>
         </section>
         
@@ -257,10 +256,10 @@ export default function Page() {
             }
           </div>
         </section>
-        
+
         { /** 生産者の場合のみ投稿ボタン表示 */}
         { Number(user.section) === 3 &&
-        <PostCursor/>
+          <PostCursor/>
         }
       </>
     );
@@ -270,33 +269,45 @@ export default function Page() {
     <>
       <section className={ "container" }>
         <div className={ "wrap" }>
-          <Logo/>
+          <h1 className={ "flex flex-col justify-center items-center py-8 gap-2 md:gap-4" }>
+            <Logo className={ "w-[120px] md:w-[240px] h-auto" }/>
+            <p className={ "text-black/80 text-12ptr md:text-12ptr lg:text-16ptr xl:text-20ptr font-notoserifjp font-medium" }>ふくいの魚つながるアプリ</p>
+          </h1>
         </div>
       </section>
       
       <section className={ "mb-4 relative" }>
         <Link to={ "/home/pickup?ref=1" } className={ "block relative" }>
-          <figure className={ "block relative w-full pt-[40.0%] md:pt-[30.0%] bg-black" }>
+          <figure className={ "block relative w-full pt-[50.0%] md:pt-[30.0%] bg-black" }>
             <img src={ "/assets/images/home/salmon.webp" } alt={ "ふくいサーモン" } className={ "absolute top-0 left-0 w-full h-full object-cover opacity-50 group-hover:opacity-70" }/>
           </figure>
-          <div className={ "absolute bottom-0 left-0 bg-black/40 w-full h-28 flex justify-center items-center" }>
-            <span className={ "text-white text-40ptr font-semibold tracking-wide whitespace-nowrap drop-shadow-lg" }>ふくいサーモン</span>
+          <div className={ "absolute bottom-0 left-0 bg-black/40 w-full h-16 md:h-20 xl:h-28 flex justify-center items-center" }>
+            <span className={ "text-white text-24ptr md:text-32ptr lg:text-40ptr font-semibold tracking-wide whitespace-nowrap drop-shadow-lg" }>ふくいサーモン</span>
           </div>
         </Link>
-        <Link to={ "/home/pickup?ref=2" }>
-          <figure className={ "block relative w-full pt-[40.0%] md:pt-[30.0%]" }>
+        <Link to={ "/home/pickup?ref=2" } className={ "block relative" }>
+          <figure className={ "block relative w-full pt-[50.0%] md:pt-[30.0%]" }>
             <img src={ "/assets/images/home/fugu.webp" } alt={ "若狭ふぐ" } className={ "absolute top-0 left-0 w-full h-full object-cover" }/>
           </figure>
+          <div className={ "absolute bottom-0 left-0 bg-black/40 w-full h-16 md:h-20 xl:h-28 flex justify-center items-center" }>
+            <span className={ "text-white text-24ptr md:text-32ptr lg:text-40ptr font-semibold tracking-wide whitespace-nowrap drop-shadow-lg" }>若狭ふぐ</span>
+          </div>
         </Link>
-        <Link to={ "/home/pickup?ref=3" }>
-          <figure className={ "block relative w-full pt-[40.0%] md:pt-[30.0%]" }>
+        <Link to={ "/home/pickup?ref=3" } className={ "block relative" }>
+          <figure className={ "block relative w-full pt-[50.0%] md:pt-[30.0%]" }>
             <img src={ "/assets/images/home/madai.webp" } alt={ "敦賀真鯛" } className={ "absolute top-0 left-0 w-full h-full object-cover" }/>
           </figure>
+          <div className={ "absolute bottom-0 left-0 bg-black/40 w-full h-16 md:h-20 xl:h-28 flex justify-center items-center" }>
+            <span className={ "text-white text-24ptr md:text-32ptr lg:text-40ptr font-semibold tracking-wide whitespace-nowrap drop-shadow-lg" }>敦賀真鯛</span>
+          </div>
         </Link>
-        <Link to={ "/home/pickup?ref=4" }>
-          <figure className={ "block relative w-full pt-[40.0%] md:pt-[30.0%]" }>
+        <Link to={ "/home/pickup?ref=4" } className={ "block relative" }>
+          <figure className={ "block relative w-full pt-[50.0%] md:pt-[30.0%]" }>
             <img src={ "/assets/images/home/mahata.webp" } alt={ "若狭まはた" } className={ "absolute top-0 left-0 w-full h-full object-cover" }/>
           </figure>
+          <div className={ "absolute bottom-0 left-0 bg-black/40 w-full h-16 md:h-20 xl:h-28 flex justify-center items-center" }>
+            <span className={ "text-white text-24ptr md:text-32ptr lg:text-40ptr font-semibold tracking-wide whitespace-nowrap drop-shadow-lg" }>若狭まはた</span>
+          </div>
         </Link>
       </section>
     </>

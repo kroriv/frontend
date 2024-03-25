@@ -1,4 +1,6 @@
 export type Report = {
+  imgpath: string;
+  url: string;
   title: string;
   detail: string;
   kind: string;    

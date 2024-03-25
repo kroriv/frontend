@@ -24,7 +24,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
   // セッション取得
   const session = await getSession(request.headers.get("Cookie"));
-  // 認証処理から利用者情報を取得
+  // 認証処理から認証署名を取得
   const { user, likes, comments } = await guard({ request: request, context: context });
   // 利用者情報をセッションに保存
   if (user) {
@@ -34,6 +34,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
   // いいねリストをセッションに保存
   if (likes && likes.length > 0) {
+    console.log("likes=", likes);
     session.set("home-user-like", likes);
   }
   // コメントリストをセッションに保存
@@ -51,7 +52,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   const jsonDataTopics = await apiResponse.json<LoaderApiResponse>();
 
   return json({
-    user, likes, comments, topics: jsonDataTopics.topics, uploads_url: context.env.UPLOADS_URL,
+    user, likes, comments,topics: jsonDataTopics.topics, uploads_url: context.env.UPLOADS_URL,
   }, {
     headers: {
       "Set-Cookie": await commitSession(session),
@@ -65,12 +66,17 @@ export default function Page() {
   // Payloads
   const { uploads_url } = loaderData;
   const { topics } = loaderData;
+  const { likes } = loaderData;
+  const { comments } = loaderData;
   
   return (
     <>
       <section className={ "container" }>
         <div className={ "wrap" }>
-          <Logo/>
+          <h1 className={ "flex flex-col justify-center items-center py-8 gap-2 md:gap-4" }>
+            <Logo className={ "w-[120px] md:w-[240px] h-auto" }/>
+            <p className={ "text-black/80 text-12ptr md:text-12ptr lg:text-16ptr xl:text-20ptr font-notoserifjp font-medium" }>ふくいの魚つながるアプリ</p>
+          </h1>
         </div>
       </section>
       <section className={ "container mb-12" }>
@@ -105,23 +111,22 @@ export default function Page() {
       <section className={ "container" }>
         <div className={ "wrap flex justify-between md:justify-start items-baseline gap-4 mb-8" }>
           <h2 className={ "text-28ptr font-semibold" }>トピックス</h2>
-          <Link to={ "" } className={ "text-[#003371]" }>すべて見る</Link>{/* 挙動不明 */}
         </div>
-        {/* 区分なし最新記事20件ほどAPIから取得してください */}
         <div className={ "wrap grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-8" }>
           { topics && topics.map((repo) => (
-          <ThumbPost 
-            key={ repo.id }
-            to={ `/home/reportview/?ref=view&id=${ repo.id }` }
-            nickname={ repo.nickname }
-            isLiked={ repo.like_flg }
-            likeCount={ repo.like_cnt }
-            isCommented={ repo.comment_flg }
-            commentCount={ repo.comment_cnt }
-            title={ repo.title }
-            uploadsUrl={ uploads_url + repo.imgPath }
-          />
-        )) }
+              <ThumbPost 
+                key={ repo.id }
+                to={ `/home/reportview/?ref=view&id=${ repo.id }` }
+                nickname={ repo.nickname }
+                isLiked={ likes.indexOf(String(repo.id)) == -1 ? false:true }
+                likeCount={ repo.like_cnt }
+                isCommented={ comments.indexOf(String(repo.id)) == -1 ? false:true }
+                commentCount={ repo.comment_cnt }
+                title={ repo.title }
+                uploadsUrl={ uploads_url }
+                imgPath={ repo.imgPath }
+              />
+            )) }
         </div>
       </section>
     </>

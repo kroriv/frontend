@@ -96,6 +96,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const apiResponse = await fetch(`${ context.env.API_URL }/signup/auth.preflight`, { method: "POST", body: formData });
   // APIからデータを受信
   const jsonData = await apiResponse.json<ActionApiResponse>();
+  console.log(jsonData);
   // 403エラーの場合
   if (jsonData.status === 403) {
     return json({

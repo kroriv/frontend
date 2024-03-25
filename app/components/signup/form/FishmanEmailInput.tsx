@@ -1,15 +1,14 @@
 import { InputHTMLAttributes } from "react";
 import { useField } from "remix-validated-form";
 
-export default function InquiryDetailInput ({ ...props }: InputHTMLAttributes<HTMLTextAreaElement>) {
-  const error = useField("inquiry.detail");
+export default function FishmanEmailInput ({ ...props }: InputHTMLAttributes<HTMLInputElement>) {
+  const error = useField("user.email");
   return (
     <fieldset>
-      <label>問い合わせ内容</label>
-      <textarea 
-        cols={32}
-        rows={10}
-        placeholder={ "問い合わせ内容をここに入力して下さい。" }
+      <label>メールアドレス</label>
+      <input 
+        type={ "text" } 
+        placeholder={ "mail@example.com" }
         className={ error.error && "border-error bg-error-100 text-error" }
         { ...props }
       />
