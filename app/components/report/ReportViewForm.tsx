@@ -1,6 +1,6 @@
 import { Link, Form } from "@remix-run/react";
 import { SerializeFrom } from "@remix-run/cloudflare";
-import { motion, HTMLMotionProps } from "framer-motion";
+import { motion, HTMLMotionProps, AnimatePresence } from "framer-motion";
 import parse from "html-react-parser";
 import { loader as ReportViewLoader, action as ReportViewAction } from "~/routes/home.reportview";
 import { FaRegCommentAlt, FaCommentAlt, FaPaperPlane } from "react-icons/fa";
@@ -49,11 +49,13 @@ export function Post({ ...props }: ReprtViewFormProps) {
         <h2 className={ "text-28ptr md:text-36ptr font-semibold" }>{ title }</h2>
         <p className={ "text-gray-500" }>{ nickname }</p>
         <div className={ "flex justify-start items-center gap-4" }>
+          
           <div className={ "flex justify-start items-center gap-2" }>
             { likeflg && <TbStarFilled className={ "text-[#003371]" }/> }
             { !likeflg && <TbStar className={ "text-gray-500" }/> }
             <span className={ likeflg ? "text-[#003371]" : "text-gray-500" }>{ likenum || 0 }</span>
           </div>
+          
           <div className={ "flex justify-start items-center gap-2" }>
             { commentflg && <FaCommentAlt className={ "text-[#003371]" }/> }
             { !commentflg && <FaRegCommentAlt className={ "text-gray-500" }/> }
@@ -72,16 +74,36 @@ export function Post({ ...props }: ReprtViewFormProps) {
           <Form
             method={ "POST" }
             action={ `?ref=view` }
-            className={ "border-solid border-[1px] border-gray-400 rounded-full flex justify-center items-center p-3" }
+            className={ `relative border-solid border-[1px] ${ likeflg ? "border-blue-550" : "border-gray-400" } rounded-full flex justify-center items-center w-14 h-14 px-0 py-0` }
           >
             <button 
               type={ "submit" }
-              className={ "px-0 py-0" }
+              className={ "px-0 py-0 w-full h-full" }
               name={ "likeid" }
               value={ report!.id }
             >
-              {  likeflg && <TbStarFilled className={ "text-[#003371] text-[140%]" }/> }
-              { !likeflg && <TbStar className={ "text-gray-500 text-[140%]" }/> }
+              <AnimatePresence>
+                <motion.span
+                  layout 
+                  initial={ { scale: 0 } }
+                  animate={ { scale: 1 } }
+                  exit={ { scale: 0 } }
+                  transition={{
+                    type: "spring",
+                    stiffness: 700,
+                    damping: 30
+                  }}
+                  className={ "block" }
+                  key={ String(likeflg) }
+                >
+                  {  likeflg && 
+                  <TbStarFilled className={ "text-blue-550 text-[150%] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" }/>
+                  }
+                  { !likeflg && 
+                  <TbStar className={ "text-gray-500 text-[150%] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" }/>
+                  }
+                </motion.span>
+              </AnimatePresence>
             </button>
           </Form>
           <span className={ likeflg ? "text-[#003371]" : "text-gray-500" }>{ likenum || 0 }</span>

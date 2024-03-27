@@ -33,8 +33,8 @@ export default function Page() {
         <BrandImage src="/assets/images/brand/madai.webp" alt="マダイ" key={ 4 }/>
         <BrandImage src="/assets/images/brand/guji.webp" alt="グジ" key={ 5 }/>
         <BrandImage src="/assets/images/brand/mahata.webp" alt="マハタ" key={ 6 }/>
-        <BrandImage src="/assets/images/brand/kaki.webp" alt="カキ" key={ 7 }/>
-        <BrandImage src="/assets/images/brand/saba.webp" alt="サバ" className={ "hidden lg:block" }  key={ 8 }/>
+        <BrandImage src="/assets/images/brand/kaki.webp" alt="カキ" className={ "hidden lg:block" } key={ 7 }/>
+        <BrandImage src="/assets/images/brand/saba.webp" alt="サバ" key={ 8 }/>
       </div>
       <div className={ "container flex flex-col justify-center items-center gap-16 min-h-screen" }>
         <div>
