@@ -8,10 +8,11 @@ import Logo from "~/components/shared/Logo";
 import ThumbPost from "~/components/shared/ThumbPost";
 import PostCursor from "~/components/shared/PostCursor";
 
+
 export const meta: MetaFunction = () => {
   return [
-    { title: "会員トップページ | FUKUI BRAND FISH" },
-    { name: "description", content: "FUKUI BRAND FISHへようこそ" },
+    { title: "魚種別 | FUKUI BRAND FISH" },
+    { name: "description", content: "福井の海で育まれた新鮮な魚介類「FUKUI BRAND FISH」をご紹介します。私たちが厳選した海の恵みを、豊富な種類と鮮度抜群でお届けします。福井の海の味をご家庭でお楽しみいただけるよう、品質にこだわった海産物を提供しています。" },
   ];
 };
 
@@ -34,7 +35,6 @@ type LoaderFishmanApiResponse = {
   messages: { message: string };
   FishmanReports: ReportCostom[];
 }
-
 
 /**
  * Loader
